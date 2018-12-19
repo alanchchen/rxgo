@@ -21,7 +21,7 @@ func (o observable) Filter(handlerFunc Any) Observable {
 	}
 
 	return makeSubject(func(dataDestinationCh DataChannel, stop StopChannel) {
-		deliver(o, dataDestinationCh, stop, FilterFunc(filterFunc), nil)
+		deliver(o, dataDestinationCh, stop, withFilter(FilterFunc(filterFunc)))
 	})
 }
 
