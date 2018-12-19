@@ -23,14 +23,14 @@ func (o observable) FlatMap(handlerFunc Any) Observable {
 	}
 
 	return makeSubject(func(dataDestinationCh DataChannel, stop StopChannel) {
-		deliver(o, dataDestinationCh, stop, nil, TransformerFunc(func(item Any) Any {
+		deliver(o, dataDestinationCh, stop, withTransformer(TransformerFunc(func(item Any) Any {
 			mappedObservable, ok := flatMapFunc(item).(observable)
 			if !ok {
 				panic(fmt.Errorf("Call using %s as type %s", reflect.TypeOf(item), reflect.TypeOf(new(Observable))))
 			}
 
 			return flatObservable(mappedObservable, stop)
-		}))
+		})))
 	})
 }
 
@@ -48,6 +48,6 @@ func (o observable) Map(handlerFunc Any) Observable {
 	}
 
 	return makeSubject(func(dataDestinationCh DataChannel, stop StopChannel) {
-		deliver(o, dataDestinationCh, stop, nil, TransformerFunc(mapFunc))
+		deliver(o, dataDestinationCh, stop, withTransformer(TransformerFunc(mapFunc)))
 	})
 }

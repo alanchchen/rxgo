@@ -33,17 +33,37 @@ func flatObservable(o observable, stop StopChannel) Any {
 	}
 }
 
-func deliver(o observable, dataDestinationCh DataChannel, stop StopChannel, filter Filter, transformer Transformer) {
-	if filter == nil {
-		filter = FilterFunc(func(item Any) bool {
+type option struct {
+	transformer Transformer
+	filter      Filter
+}
+
+type deliverOption func(*option)
+
+func withFilter(filter Filter) deliverOption {
+	return func(o *option) {
+		o.filter = filter
+	}
+}
+
+func withTransformer(transformer Transformer) deliverOption {
+	return func(o *option) {
+		o.transformer = transformer
+	}
+}
+
+func deliver(o observable, dataDestinationCh DataChannel, stop StopChannel, opts ...deliverOption) {
+	option := &option{
+		filter: FilterFunc(func(item Any) bool {
 			return true
-		})
+		}),
+		transformer: TransformerFunc(func(item Any) Any {
+			return item
+		}),
 	}
 
-	if transformer == nil {
-		transformer = TransformerFunc(func(item Any) Any {
-			return item
-		})
+	for _, opt := range opts {
+		opt(option)
 	}
 
 	dataSourceCh := make(DataChannel)
@@ -59,8 +79,8 @@ func deliver(o observable, dataDestinationCh DataChannel, stop StopChannel, filt
 				return
 			}
 
-			if filter.Filter(v) {
-				dataDestinationCh <- transformer.Transform(v)
+			if option.filter.Filter(v) {
+				dataDestinationCh <- option.transformer.Transform(v)
 			}
 		case <-stop:
 			close(stopCh)
