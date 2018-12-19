@@ -30,6 +30,28 @@ func From(source Any) Observable {
 		if fn, ok := o.Interface().(observable); ok {
 			return makeSubject(fn)
 		}
+	case reflect.Chan:
+		return makeSubject(func(dataDestinationCh DataChannel, stop StopChannel) {
+			defer close(dataDestinationCh)
+			ch := reflect.ValueOf(source)
+
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					value, ok := ch.TryRecv()
+					if !ok {
+						if !value.IsValid() {
+							continue
+						}
+
+						return
+					}
+					dataDestinationCh <- value.Interface()
+				}
+			}
+		})
 	}
 
 	panic("unsupported source type")
